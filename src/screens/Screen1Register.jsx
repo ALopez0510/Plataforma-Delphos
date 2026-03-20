@@ -1,5 +1,6 @@
 ﻿import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import api from '../services/api' // Importante: Asegúrate que la ruta sea correcta
 import {
     Eye, EyeOff, User, Mail, Lock, Globe, GraduationCap,
     Briefcase, ChevronDown, ArrowLeft, CheckCircle2, Zap,
@@ -138,6 +139,31 @@ function PasswordStrength({ password }) {
 function LoginPanel({ onNext, onGoRegister }) {
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const [loading, setLoading] = useState(false)
+
+    // LÓGICA DE LOGIN AÑADIDA
+    const handleLogin = async () => {
+        if (!email || !password) return;
+        setLoading(true);
+        try {
+            const params = new URLSearchParams();
+            params.append('username', email);
+            params.append('password', password);
+
+            const response = await api.post('/api/v1/token', params, {
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+            });
+
+            if (response.data.access_token) {
+                localStorage.setItem('token', response.data.access_token);
+                onNext();
+            }
+        } catch (err) {
+            alert(err.response?.data?.detail || "Credenciales incorrectas");
+        } finally {
+            setLoading(false);
+        }
+    }
 
     return (
         <motion.div key="login" initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -30 }} transition={{ duration: 0.35 }}
@@ -148,7 +174,6 @@ function LoginPanel({ onNext, onGoRegister }) {
                 desc="> Tu aventura profesional empieza aquí"
             />
 
-            {/* Google */}
             <motion.button whileHover={{ borderColor: '#00E5FF', color: '#00E5FF' }} whileTap={{ scale: 0.97 }}
                 style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', background: '#222', border: '1px solid #2a2a2a', borderRadius: '8px', padding: '12px 24px', fontFamily: 'Inter', fontWeight: 600, fontSize: '0.73rem', letterSpacing: '0.07em', textTransform: 'uppercase', color: '#e0e0e0', cursor: 'pointer', marginBottom: '18px' }}>
                 <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" /><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" /><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" /><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" /></svg>
@@ -169,9 +194,9 @@ function LoginPanel({ onNext, onGoRegister }) {
             </div>
 
             <motion.button whileHover={{ background: '#cc3700', boxShadow: '0 6px 28px rgba(255,69,0,0.5)' }} whileTap={{ scale: 0.97 }}
-                onClick={onNext}
-                style={{ width: '100%', background: '#FF4500', color: '#fff', border: 'none', borderRadius: '8px', padding: '14px 24px', fontFamily: 'Inter', fontWeight: 700, fontSize: '0.83rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer', boxShadow: '0 4px 20px rgba(255,69,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '16px' }}>
-                <Zap size={15} strokeWidth={2.5} /> Comenzar aventura
+                onClick={handleLogin} disabled={loading}
+                style={{ width: '100%', background: '#FF4500', color: '#fff', border: 'none', borderRadius: '8px', padding: '14px 24px', fontFamily: 'Inter', fontWeight: 700, fontSize: '0.83rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: loading ? 'not-allowed' : 'pointer', boxShadow: '0 4px 20px rgba(255,69,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '16px' }}>
+                <Zap size={15} strokeWidth={2.5} /> {loading ? 'SINCRONIZANDO...' : 'Comenzar aventura'}
             </motion.button>
 
             <p style={{ textAlign: 'center', fontSize: '0.78rem', color: '#555', fontFamily: 'Inter' }}>
@@ -189,7 +214,8 @@ function LoginPanel({ onNext, onGoRegister }) {
 // ── REGISTER PANEL ────────────────────────────────────────────────────────────
 function RegisterPanel({ onNext, onGoLogin }) {
     const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '', confirm: '', country: '', role: '', birthYear: '', terms: false })
-    const [step, setStep] = useState(1) // 1 = personal, 2 = account, 3 = done
+    const [step, setStep] = useState(1)
+    const [loading, setLoading] = useState(false)
 
     const set = (key) => (e) => setForm(f => ({ ...f, [key]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
 
@@ -197,8 +223,28 @@ function RegisterPanel({ onNext, onGoLogin }) {
     const step1Valid = form.firstName && form.lastName && form.role && form.country
     const step2Valid = form.email && form.password.length >= 8 && passwordMatch && form.terms
 
-    const handleSubmit = () => {
-        if (step2Valid) setStep(3)
+    // LÓGICA DE REGISTRO AÑADIDA
+    const handleSubmit = async () => {
+        if (!step2Valid) return;
+        setLoading(true);
+        try {
+            const payload = {
+                email: form.email,
+                password: form.password,
+                full_name: `${form.firstName} ${form.lastName}`,
+                username: form.email.split('@')[0],
+                role: form.role,
+                country: form.country,
+                birth_year: parseInt(form.birthYear) || 2000
+            };
+
+            await api.post('/api/v1/register', payload);
+            setStep(3);
+        } catch (err) {
+            alert(err.response?.data?.detail || "Error al crear la cuenta");
+        } finally {
+            setLoading(false);
+        }
     }
 
     const years = Array.from({ length: 60 }, (_, i) => 2010 - i)
@@ -208,7 +254,6 @@ function RegisterPanel({ onNext, onGoLogin }) {
             style={{ background: '#1c1c1c', border: '1px solid #2a2a2a', borderTop: '2px solid #FF4500', borderRadius: '12px', maxWidth: step === 3 ? '420px' : '500px', width: '100%', padding: '32px 32px 28px', position: 'relative', boxShadow: '0 0 40px rgba(255,69,0,0.08), 0 20px 60px rgba(0,0,0,0.6)' }}>
             <div style={{ position: 'absolute', top: 0, right: 0, width: '80px', height: '2px', background: 'linear-gradient(to left, #00E5FF, transparent)', borderRadius: '2px 0 0 0' }} />
 
-            {/* Step indicator */}
             {step < 3 && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
                     {[1, 2].map(s => (
@@ -222,7 +267,6 @@ function RegisterPanel({ onNext, onGoLogin }) {
             )}
 
             <AnimatePresence mode="wait">
-                {/* ── STEP 1: Personal info */}
                 {step === 1 && (
                     <motion.div key="step1" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                         <div style={{ width: '40px', height: '40px', marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,69,0,0.12)', border: '1px solid rgba(255,69,0,0.3)', borderRadius: '10px', fontSize: '1.2rem' }}>⬡</div>
@@ -268,7 +312,6 @@ function RegisterPanel({ onNext, onGoLogin }) {
                     </motion.div>
                 )}
 
-                {/* ── STEP 2: Account credentials */}
                 {step === 2 && (
                     <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
@@ -298,7 +341,6 @@ function RegisterPanel({ onNext, onGoLogin }) {
                             )}
                         </div>
 
-                        {/* Terms */}
                         <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', marginBottom: '18px', marginTop: '10px' }}>
                             <div onClick={() => setForm(f => ({ ...f, terms: !f.terms }))}
                                 style={{ width: '18px', height: '18px', flexShrink: 0, borderRadius: '5px', border: `1px solid ${form.terms ? '#FF4500' : '#333'}`, background: form.terms ? 'rgba(255,69,0,0.15)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '1px', cursor: 'pointer', transition: 'all 0.2s' }}>
@@ -311,15 +353,14 @@ function RegisterPanel({ onNext, onGoLogin }) {
                             </span>
                         </label>
 
-                        <motion.button onClick={handleSubmit}
+                        <motion.button onClick={handleSubmit} disabled={!step2Valid || loading}
                             whileHover={step2Valid ? { background: '#cc3700', boxShadow: '0 6px 24px rgba(255,69,0,0.5)' } : {}} whileTap={{ scale: 0.97 }}
                             style={{ width: '100%', background: step2Valid ? '#FF4500' : '#222', color: step2Valid ? '#fff' : '#555', border: step2Valid ? 'none' : '1px solid #2a2a2a', borderRadius: '8px', padding: '13px 24px', fontFamily: 'Inter', fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.09em', textTransform: 'uppercase', cursor: step2Valid ? 'pointer' : 'not-allowed', boxShadow: step2Valid ? '0 4px 18px rgba(255,69,0,0.35)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '12px', transition: 'all 0.2s' }}>
-                            <Zap size={14} strokeWidth={2.5} /> Crear mi cuenta
+                            <Zap size={14} strokeWidth={2.5} /> {loading ? 'CREANDO...' : 'Crear mi cuenta'}
                         </motion.button>
                     </motion.div>
                 )}
 
-                {/* ── STEP 3: Success */}
                 {step === 3 && (
                     <motion.div key="step3" initial={{ opacity: 0, scale: 0.92 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: 'center', padding: '16px 0' }}>
                         <motion.div animate={{ scale: [1, 1.15, 1], boxShadow: ['0 0 0px rgba(52,211,153,0)', '0 0 32px rgba(52,211,153,0.5)', '0 0 0px rgba(52,211,153,0)'] }} transition={{ duration: 1.5, repeat: 2 }}
@@ -346,7 +387,7 @@ function RegisterPanel({ onNext, onGoLogin }) {
 // ══════════════════════════════════════════════════════════════════════════════
 // ── MAIN COMPONENT ────────────────────────────────────────────────────────────
 export default function Screen1Register({ onNext }) {
-    const [mode, setMode] = useState('login') // 'login' | 'register'
+    const [mode, setMode] = useState('login')
 
     return (
         <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', background: '#111111', position: 'relative', overflow: 'hidden' }}>

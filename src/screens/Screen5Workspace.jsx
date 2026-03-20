@@ -5,49 +5,26 @@ import {
     CheckCircle2, HelpCircle, Lightbulb
 } from 'lucide-react'
 
+// Dejamos los mensajes iniciales vacíos o con un saludo genérico del sistema
 const INITIAL_MESSAGES = [
-    { from: 'ai', text: '// SISTEMA ACTIVO — Soy Mentora Ana. Estoy aquí para guiarte en la redacción de tu contrato de arrendamiento. ¿Por dónde empezamos?' },
-    { from: 'ai', text: 'PROTOCOLO: Recuerda incluir: (1) datos de las partes, (2) descripción del inmueble, (3) duración y renta mensual.' },
+    { from: 'ai', text: '// SISTEMA INICIALIZADO — Esperando carga de misión...' },
 ]
 
 const QUICK_PILLS = [
-    { label: 'No entiendo el paso 2', icon: HelpCircle },
+    { label: '¿Cómo empiezo?', icon: Sparkles },
     { label: 'Dame una pista', icon: Lightbulb },
-    { label: '¿Cómo lo empiezo?', icon: Sparkles },
 ]
 
-const CONTRACT_PLACEHOLDER = `// CONTRATO DE ARRENDAMIENTO v1.0
-// ================================
+// Placeholder vacío
+const EMPTY_PLACEHOLDER = `// ESPACIO DE TRABAJO
+// ESPERANDO ENTRADA DE DATOS...
 
-ARRENDADOR: [Nombre completo]
-DNI/NIE: ___________
-
-ARRENDATARIO: [Nombre completo]
-DNI/NIE: ___________
-
-/* === CLÁUSULA 1: OBJETO === */
-El arrendador cede en arrendamiento
-el inmueble ubicado en: [Dirección]
-
-/* === CLÁUSULA 2: DURACIÓN === */
-Inicio: _______    Fin: _______
-
-/* === CLÁUSULA 3: RENTA === */
-Renta mensual: €_______
-Día de pago:   ___
-
-/* === CLÁUSULA 4: FIANZA === */
-Importe: €_______  (= ___ mensualidades)
-
-/* === CLÁUSULA 5: SUMINISTROS === */
-Agua / Luz / Gas a cargo de: _______
-
-...`
+`
 
 export default function Screen5Workspace({ onNext }) {
     const [messages, setMessages] = useState(INITIAL_MESSAGES)
     const [inputText, setInputText] = useState('')
-    const [contractText, setContractText] = useState(CONTRACT_PLACEHOLDER)
+    const [contractText, setContractText] = useState(EMPTY_PLACEHOLDER)
     const [uploadedFiles, setUploadedFiles] = useState([])
     const [isDragging, setIsDragging] = useState(false)
     const [activeTab, setActiveTab] = useState('editor')   // 'editor' | 'uploads'
@@ -63,7 +40,7 @@ export default function Screen5Workspace({ onNext }) {
         setTimeout(() => {
             setMessages(prev => [...prev, {
                 from: 'ai',
-                text: '// RESPUESTA: Excelente punto. Asegúrate de que los datos sean legibles y verificados con documentación oficial.'
+                text: '// RESPUESTA: Procesando información. Asegúrate de seguir los parámetros técnicos de la misión.'
             }])
         }, 1000)
     }
@@ -151,7 +128,7 @@ export default function Screen5Workspace({ onNext }) {
                         )
                     })}
 
-                    <span className="neon-chip neon-chip-cyan" style={{ marginLeft: 'auto' }}>EN PROGRESO</span>
+                    <span className="neon-chip neon-chip-cyan" style={{ marginLeft: 'auto' }}>MODO EDICIÓN</span>
                 </div>
 
                 {/* EDITOR TAB */}
@@ -210,10 +187,10 @@ export default function Screen5Workspace({ onNext }) {
                             </div>
                             <div style={{ textAlign: 'center' }}>
                                 <p style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: '0.9rem', color: '#e0e0e0', marginBottom: '4px' }}>
-                                    Arrastra documentos aquí
+                                    Sube tus archivos aquí
                                 </p>
                                 <p style={{ fontFamily: 'Inter', fontSize: '0.78rem', color: '#555' }}>
-                                    o haz clic para seleccionar — PDF, DOC, DOCX, XLSX, IMG
+                                    Formatos aceptados: PDF, DOCX, XLSX, IMG
                                 </p>
                             </div>
                             <input
@@ -274,12 +251,6 @@ export default function Screen5Workspace({ onNext }) {
                                 </div>
                             </div>
                         )}
-
-                        {uploadedFiles.length === 0 && (
-                            <p style={{ textAlign: 'center', color: '#333', fontSize: '0.78rem', fontFamily: 'Inter' }}>
-                                Aún no has cargado ningún documento.
-                            </p>
-                        )}
                     </div>
                 )}
 
@@ -297,7 +268,6 @@ export default function Screen5Workspace({ onNext }) {
                         letterSpacing: '0.06em', textTransform: 'uppercase',
                         boxShadow: '0 4px 20px rgba(255,69,0,0.4)',
                     }}
-                    title="Enviar tarea"
                 >
                     <Sparkles size={16} strokeWidth={2.5} />
                     Enviar tarea
@@ -320,8 +290,8 @@ export default function Screen5Workspace({ onNext }) {
                         <Bot size={20} color="#00E5FF" strokeWidth={2.5} />
                     </div>
                     <div>
-                        <h4 style={{ fontSize: '0.85rem', fontFamily: 'Inter', fontWeight: 700, color: '#f5f5f5', letterSpacing: '0.04em' }}>MENTORA ANA</h4>
-                        <p style={{ fontSize: '0.7rem', color: '#00E5FF', fontFamily: 'Inter' }}>● EN LÍNEA · IA ESPECIALIZADA</p>
+                        <h4 style={{ fontSize: '0.85rem', fontFamily: 'Inter', fontWeight: 700, color: '#f5f5f5', letterSpacing: '0.04em' }}>MENTORA IA</h4>
+                        <p style={{ fontSize: '0.7rem', color: '#00E5FF', fontFamily: 'Inter' }}>● EN LÍNEA</p>
                     </div>
                 </div>
 

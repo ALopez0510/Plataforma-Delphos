@@ -1,6 +1,7 @@
 ﻿import { useState, useEffect } from 'react'
 import { motion, AnimatePresence, useMotionValue, useSpring } from 'framer-motion'
 import { Map, Target, Users, User2, ChevronRight, UserCircle, MapPin, Zap, CheckCircle2, Clock, Layers, Star, Activity } from 'lucide-react'
+import api from '../services/api' // Importamos la conexión centralizada
 
 const NAV_ITEMS = [
     { icon: Map, label: 'Mapa', id: 3 },
@@ -46,7 +47,6 @@ function HexNode({ x, y, i, total, isCompleted, isCurrent, isLocked, color, labe
 
     return (
         <g transform={`translate(${x},${y})`} style={{ cursor: isCurrent ? 'pointer' : 'default' }} onClick={isCurrent ? onClick : undefined}>
-            {/* Outer glow ring for current */}
             {isCurrent && (
                 <motion.polygon points={pts} fill="none" stroke={color} strokeWidth="1.5"
                     animate={{ opacity: [0.3, 0.9, 0.3], scale: [1, 1.18, 1] }}
@@ -54,13 +54,11 @@ function HexNode({ x, y, i, total, isCompleted, isCurrent, isLocked, color, labe
                     style={{ transformOrigin: '0 0' }}
                 />
             )}
-            {/* Hex fill */}
             <polygon points={pts}
                 fill={isCompleted ? color : isCurrent ? `${color}20` : '#1a1a1a'}
                 stroke={isCompleted ? color : isCurrent ? color : '#2a2a2a'}
                 strokeWidth="2"
             />
-            {/* Icon / Number */}
             {isCompleted
                 ? <CheckCircle2 x={-9} y={-9} size={18} color="#111" strokeWidth={2.5} />
                 : isCurrent
@@ -85,7 +83,6 @@ function HexPathMap({ modules, activeIdx, color, MissionIcon, onNodeClick }) {
                     <filter id="glow2"><feGaussianBlur stdDeviation="4" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
                     <filter id="nodeglow"><feGaussianBlur stdDeviation="6" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
                 </defs>
-                {/* Connector paths */}
                 {modules.map((_, i) => {
                     if (i >= modules.length - 1) return null
                     const x1 = COLS[i % 2], y1 = i * ROW_H + 36
@@ -96,7 +93,6 @@ function HexPathMap({ modules, activeIdx, color, MissionIcon, onNodeClick }) {
                         strokeDasharray={done ? 'none' : '6 4'} opacity={done ? 0.9 : 0.5}
                         filter={done ? 'url(#glow2)' : 'none'} />
                 })}
-                {/* Nodes */}
                 {modules.map((mod, i) => (
                     <HexNode key={i} x={COLS[i % 2]} y={i * ROW_H + 36} i={i} total={modules.length}
                         isCompleted={i < activeIdx} isCurrent={i === activeIdx} isLocked={i > activeIdx}
@@ -104,7 +100,6 @@ function HexPathMap({ modules, activeIdx, color, MissionIcon, onNodeClick }) {
                         onClick={onNodeClick}
                     />
                 ))}
-                {/* Labels beside nodes */}
                 {modules.map((mod, i) => {
                     const isLeft = i % 2 === 0
                     const x = COLS[i % 2] + (isLeft ? 36 : -36)
@@ -130,7 +125,6 @@ function HexPathMap({ modules, activeIdx, color, MissionIcon, onNodeClick }) {
     )
 }
 
-// Animated stat card
 function StatCard({ value, label, suffix, color, Icon, delay = 0 }) {
     return (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }}
@@ -157,6 +151,27 @@ const PARTICLES = Array.from({ length: 18 }, (_, i) => ({
 export default function Screen3Dashboard({ onNavigate, activeMission }) {
     const [activeNav, setActiveNav] = useState('Mapa')
 
+    // --- LÓGICA DE INTEGRACIÓN BACKEND ---
+    const [userData, setUserData] = useState({
+        username: 'Cargando...',
+        xp_total: 0,
+        level_current: 0,
+        streak_days: 0
+    });
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                // El interceptor de api.js se encargará de adjuntar el Bearer Token
+                const response = await api.get('/api/v1/users/me');
+                setUserData(response.data);
+            } catch (err) {
+                console.error("No se pudo obtener el perfil del campus:", err);
+            }
+        };
+        fetchUserData();
+    }, []);
+
     const handleNav = (item) => { setActiveNav(item.label); onNavigate(item.id) }
 
     return (
@@ -177,20 +192,26 @@ export default function Screen3Dashboard({ onNavigate, activeMission }) {
                 </div>
 
                 <div style={{ textAlign: 'center' }}>
-                    <h3 style={{ fontSize: '0.82rem', fontWeight: 700, color: '#e0e0e0', fontFamily: 'Inter', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '4px' }}>NOMBRE_USUARIO</h3>
+                    {/* NOMBRE DINÁMICO */}
+                    <h3 style={{ fontSize: '0.82rem', fontWeight: 700, color: '#e0e0e0', fontFamily: 'Inter', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '4px' }}>
+                        {userData.username}
+                    </h3>
                     <motion.span animate={{ opacity: [0.7, 1, 0.7] }} transition={{ repeat: Infinity, duration: 2.5 }}
                         style={{ fontSize: '0.65rem', color: '#FF4500', fontFamily: 'Inter', fontWeight: 600, background: 'rgba(255,69,0,0.1)', border: '1px solid rgba(255,69,0,0.25)', borderRadius: '5px', padding: '2px 10px', display: 'inline-block' }}>
-                        {activeMission ? '⚡ En misión' : 'Nuevo explorador'}
+                        {activeMission ? '⚡ En misión' : 'Explorador Aurum'}
                     </motion.span>
                 </div>
 
                 <div style={{ width: '100%' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-                        <span style={{ fontSize: '0.65rem', fontWeight: 600, color: '#555', fontFamily: 'Inter' }}>Nivel 0</span>
-                        <span style={{ fontSize: '0.65rem', color: '#00E5FF', fontWeight: 600, fontFamily: 'Inter' }}>0 / 100 XP</span>
+                        {/* NIVEL DINÁMICO */}
+                        <span style={{ fontSize: '0.65rem', fontWeight: 600, color: '#555', fontFamily: 'Inter' }}>Nivel {userData.level_current}</span>
+                        <span style={{ fontSize: '0.65rem', color: '#00E5FF', fontWeight: 600, fontFamily: 'Inter' }}>{userData.xp_total} / 100 XP</span>
                     </div>
                     <div style={{ background: '#1a1a1a', borderRadius: '9999px', overflow: 'hidden', height: '6px', border: '1px solid #2a2a2a', position: 'relative' }}>
-                        <motion.div initial={{ width: 0 }} animate={{ width: activeMission ? '8%' : '0%' }} transition={{ duration: 1.2, ease: [0.4, 0, 0.2, 1] }}
+                        <motion.div initial={{ width: 0 }}
+                            animate={{ width: `${Math.min((userData.xp_total % 100), 100)}%` }}
+                            transition={{ duration: 1.2, ease: [0.4, 0, 0.2, 1] }}
                             style={{ height: '6px', borderRadius: '9999px', background: 'linear-gradient(90deg, #FF4500, #00E5FF)', position: 'relative' }}>
                             <motion.div animate={{ opacity: [0, 1, 0], x: ['0%', '100%'] }} transition={{ repeat: Infinity, duration: 1.8, ease: 'linear' }}
                                 style={{ position: 'absolute', top: 0, left: 0, width: '40px', height: '100%', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent)', borderRadius: '9999px' }} />
@@ -199,11 +220,12 @@ export default function Screen3Dashboard({ onNavigate, activeMission }) {
                 </div>
 
                 <div style={{ background: 'rgba(255,69,0,0.06)', border: '1px solid rgba(255,69,0,0.15)', borderRadius: '10px', padding: '12px 14px', width: '100%', textAlign: 'center' }}>
-                    <motion.div animate={activeMission ? { scale: [1, 1.15, 1] } : {}} transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}>
-                        <Zap size={20} color={activeMission ? '#FF4500' : '#333'} strokeWidth={2} style={{ display: 'block', margin: '0 auto 4px' }} />
+                    <motion.div animate={userData.streak_days > 0 ? { scale: [1, 1.15, 1] } : {}} transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}>
+                        <Zap size={20} color={userData.streak_days > 0 ? '#FF4500' : '#333'} strokeWidth={2} style={{ display: 'block', margin: '0 auto 4px' }} />
                     </motion.div>
-                    <p style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: '1rem', color: activeMission ? '#FF4500' : '#555' }}>0 Días</p>
-                    <p style={{ fontSize: '0.6rem', color: '#444', fontFamily: 'Inter', letterSpacing: '0.08em', marginTop: '2px' }}>SIN RACHA AÚN</p>
+                    {/* RACHA DINÁMICA */}
+                    <p style={{ fontFamily: 'Inter', fontWeight: 700, fontSize: '1rem', color: userData.streak_days > 0 ? '#FF4500' : '#555' }}>{userData.streak_days} Días</p>
+                    <p style={{ fontSize: '0.6rem', color: '#444', fontFamily: 'Inter', letterSpacing: '0.08em', marginTop: '2px' }}>{userData.streak_days > 0 ? 'RACHA ACTIVA' : 'SIN RACHA AÚN'}</p>
                 </div>
 
             </aside>
@@ -235,9 +257,9 @@ export default function Screen3Dashboard({ onNavigate, activeMission }) {
                 {/* Stat cards row */}
                 {activeMission && (
                     <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', position: 'relative', zIndex: 1 }}>
-                        <StatCard value={0} label="XP Total" suffix="" color="#00E5FF" Icon={Zap} delay={0} />
+                        <StatCard value={userData.xp_total} label="XP Total" suffix="" color="#00E5FF" Icon={Zap} delay={0} />
                         <StatCard value={activeMission.modules.length} label="Módulos" suffix="" color="#FF4500" Icon={Layers} delay={0.08} />
-                        <StatCard value={0} label="Racha" suffix=" días" color="#FFA726" Icon={Activity} delay={0.16} />
+                        <StatCard value={userData.streak_days} label="Racha" suffix=" días" color="#FFA726" Icon={Activity} delay={0.16} />
                     </div>
                 )}
 

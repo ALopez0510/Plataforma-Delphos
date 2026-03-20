@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import './index.css'
 import Screen1Register from './screens/Screen1Register'
@@ -11,8 +11,142 @@ import Screen6Victory from './screens/Screen6Victory'
 import Screen7Community from './screens/Screen7Community'
 import Screen8Profile from './screens/Screen8Profile'
 import {
-  LayoutDashboard, Target, Briefcase, Users, User2,
+  LayoutDashboard, Target, Briefcase, Users, User2, Palette,
 } from 'lucide-react'
+
+// ── Color Themes ───────────────────────────────────────────────
+const THEMES = [
+  { id: '1', name: 'Soft Cyberpunk', primary: '#FF4500', accent: '#00E5FF', bg: '#111111' },
+  { id: '2', name: 'Forest Neon', primary: '#22C55E', accent: '#EF4444', bg: '#020617' },
+  { id: '3', name: 'Blade Runner', primary: '#FF4500', accent: '#00E5FF', bg: '#111111' },
+]
+
+// ── Theme Switcher ────────────────────────────────────────────
+function ThemeSwitcher({ activeTheme, onThemeChange }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const active = THEMES.find(t => t.id === activeTheme) || THEMES[0]
+
+  return (
+    <div ref={ref} style={{ position: 'fixed', top: '14px', right: '16px', zIndex: 9999 }}>
+      {/* Trigger button */}
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => setOpen(o => !o)}
+        title="Cambiar tema de colores"
+        style={{
+          display: 'flex', alignItems: 'center', gap: '7px',
+          background: 'rgba(20,20,20,0.88)',
+          backdropFilter: 'blur(14px)',
+          border: `1px solid ${active.primary}55`,
+          borderRadius: '12px',
+          padding: '7px 13px',
+          cursor: 'pointer',
+          boxShadow: `0 0 14px ${active.primary}33, 0 4px 16px rgba(0,0,0,0.5)`,
+          transition: 'box-shadow 0.3s ease, border-color 0.3s ease',
+        }}
+      >
+        <Palette size={15} color={active.primary} />
+        <span style={{
+          fontFamily: 'Inter, sans-serif', fontSize: '0.62rem', fontWeight: 600,
+          letterSpacing: '0.06em', textTransform: 'uppercase',
+          color: active.primary,
+        }}>
+          {active.name}
+        </span>
+        {/* Color swatches preview */}
+        <div style={{ display: 'flex', gap: '3px', marginLeft: '2px' }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: active.primary }} />
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: active.accent }} />
+        </div>
+      </motion.button>
+
+      {/* Dropdown */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -8, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.95 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            style={{
+              position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+              background: 'rgba(18,18,18,0.97)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '14px',
+              padding: '8px',
+              minWidth: '196px',
+              boxShadow: '0 16px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04) inset',
+              display: 'flex', flexDirection: 'column', gap: '4px',
+            }}
+          >
+            <p style={{
+              fontFamily: 'Inter, sans-serif', fontSize: '0.55rem', fontWeight: 700,
+              letterSpacing: '0.1em', textTransform: 'uppercase',
+              color: '#555', padding: '4px 8px 6px 8px',
+            }}>Tema de colores</p>
+
+            {THEMES.map(theme => {
+              const isActive = theme.id === activeTheme
+              return (
+                <motion.button
+                  key={theme.id}
+                  whileHover={{ x: 3 }}
+                  onClick={() => { onThemeChange(theme.id); setOpen(false) }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    background: isActive ? `${theme.primary}18` : 'transparent',
+                    border: isActive ? `1px solid ${theme.primary}44` : '1px solid transparent',
+                    borderRadius: '9px',
+                    padding: '9px 11px',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'background 0.15s ease',
+                  }}
+                >
+                  {/* Mini palette preview */}
+                  <div style={{ display: 'flex', gap: '3px', flexShrink: 0 }}>
+                    <div style={{ width: 14, height: 24, borderRadius: '4px 0 0 4px', background: theme.bg, border: '1px solid rgba(255,255,255,0.1)' }} />
+                    <div style={{ width: 14, height: 24, background: theme.primary }} />
+                    <div style={{ width: 14, height: 24, borderRadius: '0 4px 4px 0', background: theme.accent }} />
+                  </div>
+                  <div>
+                    <p style={{
+                      fontFamily: 'Inter, sans-serif', fontSize: '0.72rem', fontWeight: 600,
+                      color: isActive ? theme.primary : '#ccc',
+                      margin: 0, lineHeight: 1.2,
+                    }}>{theme.name}</p>
+                    <p style={{
+                      fontFamily: 'Inter, sans-serif', fontSize: '0.58rem',
+                      color: '#555', margin: 0, marginTop: '1px',
+                    }}>Tema {theme.id}</p>
+                  </div>
+                  {isActive && (
+                    <div style={{
+                      marginLeft: 'auto', width: 6, height: 6, borderRadius: '50%',
+                      background: theme.primary,
+                      boxShadow: `0 0 6px ${theme.primary}`,
+                    }} />
+                  )}
+                </motion.button>
+              )
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
 
 // ── Nav items (only visible after login) ─────────────────────────────────────
 const NAV_ITEMS = [
@@ -65,7 +199,6 @@ function BottomNav({ current, onNavigate }) {
                 position: 'relative', transition: 'background 0.2s',
               }}
             >
-              {/* Active glow dot */}
               {active && (
                 <motion.div
                   layoutId="nav-dot"
@@ -98,11 +231,18 @@ function BottomNav({ current, onNavigate }) {
   )
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════════
 function App() {
   const [currentScreen, setCurrentScreen] = useState(1)
   const [activeMission, setActiveMission] = useState(null)
   const [oracleAnswers, setOracleAnswers] = useState([])
+  const [theme, setTheme] = useState(() => localStorage.getItem('dao-theme') || '1')
+
+  // Apply theme to <html> so CSS [data-theme] selectors work globally
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    localStorage.setItem('dao-theme', theme)
+  }, [theme])
 
   const navigate = (screenId) => setCurrentScreen(screenId)
 
@@ -145,8 +285,13 @@ function App() {
   const showNav = !PRE_LOGIN_SCREENS.has(currentScreen)
 
   return (
-    <div style={{ minHeight: '100vh', background: '#111111', position: 'relative', paddingBottom: showNav ? '88px' : '0' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', position: 'relative', paddingBottom: showNav ? '88px' : '0' }}>
+
+      {/* Theme switcher — always visible, top-right corner */}
+      <ThemeSwitcher activeTheme={theme} onThemeChange={setTheme} />
+
       {renderScreen()}
+
       <AnimatePresence>
         {showNav && (
           <BottomNav current={currentScreen} onNavigate={navigate} />
@@ -156,4 +301,4 @@ function App() {
   )
 }
 
-export default App
+export default App;
